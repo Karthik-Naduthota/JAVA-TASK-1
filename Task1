@@ -1,0 +1,213 @@
+import java.util.*;
+
+/**
+ * Single-file Library Management System (beginner-friendly)
+ * - Put this code in LibraryManagement.java
+ * - Compile: javac LibraryManagement.java
+ * - Run:     java LibraryManagement
+ *
+ * All helper classes are nested to avoid filename/class mismatch errors.
+ */
+public class LibraryManagement {
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        Library lib = new Library();
+
+        System.out.println("Welcome to the Library Management System (Beginner)");
+        while (true) {
+            System.out.println("\n===== Menu =====");
+            System.out.println("1. Add Book");
+            System.out.println("2. Issue Book");
+            System.out.println("3. Return Book");
+            System.out.println("4. Check Availability");
+            System.out.println("5. Show All Books");
+            System.out.println("6. Exit");
+            System.out.print("Enter choice (1-6): ");
+
+            String input = sc.nextLine().trim();
+            int choice;
+            try {
+                choice = Integer.parseInt(input);
+            } catch (NumberFormatException e) {
+                System.out.println("Please enter a number between 1 and 6.");
+                continue;
+            }
+
+            try {
+                switch (choice) {
+                    case 1:
+                        System.out.print("Enter Title: ");
+                        String title = sc.nextLine().trim();
+                        System.out.print("Enter Author: ");
+                        String author = sc.nextLine().trim();
+                        System.out.print("Enter ISBN: ");
+                        String isbn = sc.nextLine().trim();
+                        lib.addBook(new Book(title, author, isbn));
+                        break;
+
+                    case 2:
+                        System.out.print("Enter ISBN to issue: ");
+                        String issueIsbn = sc.nextLine().trim();
+                        lib.issueBook(issueIsbn); // throws Exception if not possible
+                        break;
+
+                    case 3:
+                        System.out.print("Enter ISBN to return: ");
+                        String returnIsbn = sc.nextLine().trim();
+                        lib.returnBook(returnIsbn); // throws Exception if not possible
+                        break;
+
+                    case 4:
+                        System.out.print("Enter ISBN to check: ");
+                        String checkIsbn = sc.nextLine().trim();
+                        boolean available = lib.isAvailable(checkIsbn);
+                        System.out.println("Availability for ISBN " + checkIsbn + ": " + (available ? "Available" : "Not available"));
+                        break;
+
+                    case 5:
+                        lib.showBooks();
+                        break;
+
+                    case 6:
+                        System.out.println("Goodbye!");
+                        sc.close();
+                        return;
+
+                    default:
+                        System.out.println("Invalid choice. Enter 1 to 6.");
+                }
+            } catch (Exception e) {
+                // Friendly error printing (shows the reason why operation failed)
+                System.out.println("Error: " + e.getMessage());
+            }
+        }
+    }
+
+    // -------------------------
+    // Nested helper classes
+    // -------------------------
+
+    // Simple Book class
+    static class Book {
+        private String title;
+        private String author;
+        private String isbn;
+        private boolean isIssued;
+
+        public Book(String title, String author, String isbn) {
+            this.title = title != null ? title : "";
+            this.author = author != null ? author : "";
+            this.isbn = isbn != null ? isbn : "";
+            this.isIssued = false;
+        }
+
+        public String getTitle() { return title; }
+        public String getAuthor() { return author; }
+        public String getIsbn() { return isbn; }
+        public boolean isIssued() { return isIssued; }
+        public void setIssued(boolean val) { this.isIssued = val; }
+
+        @Override
+        public String toString() {
+            return title + " by " + author + " (ISBN: " + isbn + ")";
+        }
+    }
+
+    // Simple interface to show use of interfaces
+    interface Issueable {
+        void issueBook(String isbn) throws Exception;
+        void returnBook(String isbn) throws Exception;
+        boolean isAvailable(String isbn);
+    }
+
+    // Library stores list of Book objects and implements Issueable
+    static class Library implements Issueable {
+        private List<Book> books;
+
+        public Library() {
+            books = new ArrayList<>();
+            // optional: add a couple of example books
+            books.add(new Book("Java Basics", "Author A", "101"));
+            books.add(new Book("Data Structures", "Author B", "102"));
+        }
+
+        // Add a book
+        public void addBook(Book b) {
+            if (b == null || b.getIsbn().isEmpty()) {
+                System.out.println("Cannot add empty book or missing ISBN.");
+                return;
+            }
+            // prevent duplicate ISBN
+            for (Book x : books) {
+                if (x.getIsbn().equals(b.getIsbn())) {
+                    System.out.println("A book with this ISBN already exists: " + b.getIsbn());
+                    return;
+                }
+            }
+            books.add(b);
+            System.out.println("Book added: " + b);
+        }
+
+        // Issue (lend) a book
+        @Override
+        public void issueBook(String isbn) throws Exception {
+            if (isbn == null || isbn.isEmpty()) throw new Exception("Please provide a valid ISBN.");
+            for (Book b : books) {
+                if (b.getIsbn().equals(isbn)) {
+                    if (b.isIssued()) {
+                        throw new Exception("This book is already issued: " + isbn);
+                    } else {
+                        b.setIssued(true);
+                        System.out.println("Issued: " + b);
+                        return;
+                    }
+                }
+            }
+            throw new Exception("Book with ISBN not found: " + isbn);
+        }
+
+        // Return a book
+        @Override
+        public void returnBook(String isbn) throws Exception {
+            if (isbn == null || isbn.isEmpty()) throw new Exception("Please provide a valid ISBN.");
+            for (Book b : books) {
+                if (b.getIsbn().equals(isbn)) {
+                    if (!b.isIssued()) {
+                        throw new Exception("This book is not currently issued: " + isbn);
+                    } else {
+                        b.setIssued(false);
+                        System.out.println("Returned: " + b);
+                        return;
+                    }
+                }
+            }
+            throw new Exception("Book with ISBN not found: " + isbn);
+        }
+
+        // Check availability
+        @Override
+        public boolean isAvailable(String isbn) {
+            if (isbn == null || isbn.isEmpty()) return false;
+            for (Book b : books) {
+                if (b.getIsbn().equals(isbn)) {
+                    return !b.isIssued();
+                }
+            }
+            return false;
+        }
+
+        // Show all books
+        public void showBooks() {
+            System.out.println("\n--- Library Books ---");
+            if (books.isEmpty()) {
+                System.out.println("No books in library.");
+                return;
+            }
+            for (Book b : books) {
+                String status = b.isIssued() ? "(Issued)" : "(Available)";
+                System.out.println(b + " " + status);
+            }
+        }
+    }
+}
